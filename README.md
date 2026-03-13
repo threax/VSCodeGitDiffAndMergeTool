@@ -32,6 +32,17 @@ For example, this sets up Beyond Compare 4 on Windows:
 
 `keepbackup = false` prevents the system from creating `.orig` backup files after a merge. `trustexitcode = true` tells Git that the diff tool's exit code can be trusted to determine the outcome of the merge.
 
+## Building
+Install vsce
+```
+npm install -g @vscode/vsce
+```
+
+Build vsix
+```
+vsce package
+```
+
 ## Changelog
 
 ### 1.0.5
