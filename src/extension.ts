@@ -2,6 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import { spawn } from 'child_process';
+import * as path from 'path';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -43,21 +44,21 @@ export function activate(context: vscode.ExtensionContext) {
 						vscode.window.showInformationMessage(infoMessageFunc(targetFile));
 					}
 
-					const ls = spawn('git', gitArgumentsFunc(targetFile), {
+					const git = spawn('git', gitArgumentsFunc(targetFile), {
 						cwd: workspaceFolder.uri.fsPath
 					});
 
 					// Handle process output streams
-					ls.stdout.on('data', (data) => {
+					git.stdout.on('data', (data) => {
 						console.log(`stdout: ${data}`);
 					});
 
-					ls.stderr.on('data', (data) => {
+					git.stderr.on('data', (data) => {
 						console.error(`stderr: ${data}`);
 					});
 
 					await new Promise((resolve) => {
-						ls.on('close', (code) => {
+						git.on('close', (code) => {
 							console.log(`Child process exited with code ${code}`);
 							resolve(0);
 						});
@@ -71,17 +72,17 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-let diffCommand = vscode.commands.registerCommand('gitdiffandmergetool.diff', (param: any) => {
+	let diffCommand = vscode.commands.registerCommand('gitdiffandmergetool.diff', (param: any) => {
 		executeOperation(
 			param,
-			(targetFile: string) => { return ['difftool', '-y', 'HEAD', targetFile]; },
+			(targetFile: string) => { return ['difftool', '-t', path.extname(targetFile), '-y', targetFile]; },
 			(targetFile: string) => { return 'Launching diff tool for ' + targetFile; });
 	});
 
 	let mergeCommand = vscode.commands.registerCommand('gitdiffandmergetool.merge', async (param: any) => {
 		executeOperation(
 			param,
-			(targetFile: string) => { return ['mergetool', '-y', targetFile]; },
+			(targetFile: string) => { return ['mergetool', '-t', path.extname(targetFile), '-y', targetFile]; },
 			(targetFile: string) => { return 'Launching merge tool for ' + targetFile; });
 	});
 
