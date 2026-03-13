@@ -1,6 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { spawn } from 'child_process';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -26,7 +27,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 		const fullTargetFilePath: string = commandParam.resourceUri.fsPath;
 
-		const simpleGit = await import('simple-git');
 		if (vscode.workspace.workspaceFolders) {
 			// Look through the workspace folders and find the one that has our file.
 			for (let workspaceFolder of vscode.workspace.workspaceFolders) {
@@ -43,13 +43,25 @@ export function activate(context: vscode.ExtensionContext) {
 						vscode.window.showInformationMessage(infoMessageFunc(targetFile));
 					}
 
-					simpleGit(projectPath).raw(
-						gitArgumentsFunc(targetFile),
-						(err: any, result: any) => {
-							if (err) {
-								vscode.window.showWarningMessage(err);
-							}
+					const ls = spawn('git', gitArgumentsFunc(targetFile), {
+						cwd: workspaceFolder.uri.fsPath
+					});
+
+					// Handle process output streams
+					ls.stdout.on('data', (data) => {
+						console.log(`stdout: ${data}`);
+					});
+
+					ls.stderr.on('data', (data) => {
+						console.error(`stderr: ${data}`);
+					});
+
+					await new Promise((resolve) => {
+						ls.on('close', (code) => {
+							console.log(`Child process exited with code ${code}`);
+							resolve(0);
 						});
+					});
 
 					return;
 				}
@@ -59,7 +71,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-	let diffCommand = vscode.commands.registerCommand('gitdiffandmergetool.diff', (param: any) => {
+let diffCommand = vscode.commands.registerCommand('gitdiffandmergetool.diff', (param: any) => {
 		executeOperation(
 			param,
 			(targetFile: string) => { return ['difftool', '-y', 'HEAD', targetFile]; },
